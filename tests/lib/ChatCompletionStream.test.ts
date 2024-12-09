@@ -145,15 +145,13 @@ describe('.stream()', () => {
       {
         "finish_reason": "stop",
         "index": 0,
+        "logprobs": null,
         "message": {
           "content": null,
+          "parsed": null,
+          "refusal": null,
           "role": "assistant",
-          "audio": {
-            "id": "audio-123",
-            "data": "base64audio...",
-            "expires_at": 1704805200,
-            "transcript": "Hello, this is a test response."
-          }
+          "tool_calls": []
         }
       }
     `);
