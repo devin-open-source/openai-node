@@ -151,8 +151,8 @@ describe('.stream()', () => {
           "parsed": null,
           "refusal": null,
           "role": "assistant",
-          "tool_calls": []
-        }
+          "tool_calls": [],
+        },
       }
     `);
   }, 120000); // Increase timeout to 120 seconds

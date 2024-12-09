@@ -101,9 +101,7 @@ data: {"id":"chatcmpl-AcR3cjlDtqPZPXCiXB6XMfnyZSrx4","object":"chat.completion.c
 
 data: {"id":"chatcmpl-AcR3cjlDtqPZPXCiXB6XMfnyZSrx4","object":"chat.completion.chunk","created":1733723836,"model":"gpt-4o-audio-preview-2024-10-01","system_fingerprint":"fp_e4a46b1068","choices":[{"index":0,"delta":{"audio":{"expires_at":1733727436}}}]}
 
-data: [DONE]
-
-"
+data: [DONE]"
 `;
 
 exports[`.stream() works 1`] = `
