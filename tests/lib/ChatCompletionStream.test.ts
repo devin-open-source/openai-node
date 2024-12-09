@@ -37,7 +37,9 @@ describe('.stream()', () => {
             "city": "San Francisco",
             "units": "c",
           },
+          "refusal": null,
           "role": "assistant",
+          "tool_calls": [],
         },
       }
     `);
@@ -194,7 +196,9 @@ describe('.stream()', () => {
             "city": "San Francisco",
             "units": "f",
           },
+          "refusal": null,
           "role": "assistant",
+          "tool_calls": [],
         },
       }
     `);
@@ -379,8 +383,10 @@ describe('.stream()', () => {
         },
         "message": {
           "content": null,
+          "parsed": null,
           "refusal": "I'm very sorry, but I can't assist with that request.",
           "role": "assistant",
+          "tool_calls": [],
         },
       }
     `);
@@ -392,9 +398,22 @@ describe('.stream()', () => {
       openai.beta.chat.completions.stream({
         model: 'gpt-4o-audio-preview',
         messages: [{ role: 'user', content: 'Say something' }],
-      })
+      }),
     );
 
+    // Collect all chunks to verify streaming behavior
+    const chunks: Array<any> = [];
+    for await (const chunk of stream) {
+      chunks.push(chunk);
+    }
+
+    // Verify the streaming response format
+    const streamText = chunks
+      .map((chunk) => `data: ${JSON.stringify(chunk)}`)
+      .join('\n\n');
+    expect(streamText + '\n\ndata: [DONE]').toMatchSnapshot();
+
+    // Verify the final completion
     const completion = await stream.finalChatCompletion();
     expect(completion.choices[0]).toMatchInlineSnapshot(`
       {
