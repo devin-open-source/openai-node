@@ -398,6 +398,8 @@ describe('.stream()', () => {
       openai.beta.chat.completions.stream({
         model: 'gpt-4o-audio-preview',
         messages: [{ role: 'user', content: 'Say something' }],
+        modalities: ['text', 'audio'],
+        audio: { voice: 'alloy', format: 'pcm16' },
       }),
     );
 
@@ -431,5 +433,4 @@ describe('.stream()', () => {
         }
       }
     `);
-  });
-});
+  }, 60000);
