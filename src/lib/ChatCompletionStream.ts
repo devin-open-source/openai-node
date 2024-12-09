@@ -608,19 +608,121 @@ function finalizeChatCompletion<ParsedT>(
   snapshot: ChatCompletionSnapshot,
   params: ChatCompletionCreateParams | null,
 ): ParsedChatCompletion<ParsedT> {
-  const completion = { ...snapshot };
+  const { id, choices, created, model, system_fingerprint, ...rest } = snapshot;
+  const completion: ChatCompletion = {
+    ...rest,
+    id,
+    choices: choices.map(
+      ({ message, finish_reason, index, logprobs, ...choiceRest }): ChatCompletion.Choice => {
+        // Special handling for audio responses
+        const hasAudioExpiry = message.audio?.expires_at != null;
+        // For audio responses with expires_at, use "stop" as finish_reason
+        const finalFinishReason = hasAudioExpiry ? 'stop' : finish_reason;
+        if (!finalFinishReason) {
+          throw new OpenAIError(`missing finish_reason for choice ${index}`);
+        }
 
-  // Process each choice to handle finish_reason
-  for (const [index, choice] of completion.choices.entries()) {
-    const { finish_reason } = choice;
-    // Special handling for audio responses
-    const hasAudioExpiry = choice.message?.audio?.expires_at != null;
-    if (!finish_reason && !hasAudioExpiry) {
-      throw new OpenAIError(`missing finish_reason for choice ${index}`);
-    }
-  }
+        const { content = null, function_call, tool_calls, audio, ...messageRest } = message;
+        const role = message.role as 'assistant';
+        if (!role) {
+          throw new OpenAIError(`missing role for choice ${index}`);
+        }
 
-  return completion as ParsedChatCompletion<ParsedT>;
+        // Only include audio if all required fields are present
+        const finalAudio = audio && audio.id && audio.data && audio.expires_at && audio.transcript
+          ? {
+              id: audio.id,
+              data: audio.data,
+              expires_at: audio.expires_at,
+              transcript: audio.transcript,
+            }
+          : null;
+
+        if (function_call) {
+          const { arguments: args, name } = function_call;
+          if (args == null) {
+            throw new OpenAIError(`missing function_call.arguments for choice ${index}`);
+          }
+
+          if (!name) {
+            throw new OpenAIError(`missing function_call.name for choice ${index}`);
+          }
+
+          return {
+            ...choiceRest,
+            message: {
+              content,
+              function_call: { arguments: args, name },
+              role,
+              refusal: message.refusal ?? null,
+              ...(finalAudio ? { audio: finalAudio } : {}),
+            },
+            finish_reason: finalFinishReason,
+            index,
+            logprobs,
+          };
+        }
+
+        if (tool_calls) {
+          return {
+            ...choiceRest,
+            index,
+            finish_reason: finalFinishReason,
+            logprobs,
+            message: {
+              ...messageRest,
+              role,
+              content,
+              refusal: message.refusal ?? null,
+              ...(finalAudio ? { audio: finalAudio } : {}),
+              tool_calls: tool_calls.map((tool_call, i) => {
+                const { function: fn, type, id, ...toolRest } = tool_call;
+                const { arguments: args, name, ...fnRest } = fn || {};
+                if (id == null) {
+                  throw new OpenAIError(`missing choices[${index}].tool_calls[${i}].id\n${str(snapshot)}`);
+                }
+                if (type == null) {
+                  throw new OpenAIError(`missing choices[${index}].tool_calls[${i}].type\n${str(snapshot)}`);
+                }
+                if (name == null) {
+                  throw new OpenAIError(
+                    `missing choices[${index}].tool_calls[${i}].function.name\n${str(snapshot)}`,
+                  );
+                }
+                if (args == null) {
+                  throw new OpenAIError(
+                    `missing choices[${index}].tool_calls[${i}].function.arguments\n${str(snapshot)}`,
+                  );
+                }
+
+                return { ...toolRest, id, type, function: { ...fnRest, name, arguments: args } };
+              }),
+            },
+          };
+        }
+
+        return {
+          ...choiceRest,
+          message: {
+            ...messageRest,
+            content,
+            role,
+            refusal: message.refusal ?? null,
+            ...(finalAudio ? { audio: finalAudio } : {}),
+          },
+          finish_reason: finalFinishReason,
+          index,
+          logprobs,
+        };
+      },
+    ),
+    created,
+    model,
+    object: 'chat.completion',
+    ...(system_fingerprint ? { system_fingerprint } : {}),
+  };
+
+  return maybeParseChatCompletion(completion, params);
 }
 
 function str(x: unknown) {

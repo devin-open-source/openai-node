@@ -37,9 +37,7 @@ describe('.stream()', () => {
             "city": "San Francisco",
             "units": "c",
           },
-          "refusal": null,
           "role": "assistant",
-          "tool_calls": [],
         },
       }
     `);
@@ -196,9 +194,7 @@ describe('.stream()', () => {
             "city": "San Francisco",
             "units": "f",
           },
-          "refusal": null,
           "role": "assistant",
-          "tool_calls": [],
         },
       }
     `);
@@ -383,13 +379,37 @@ describe('.stream()', () => {
         },
         "message": {
           "content": null,
-          "parsed": null,
           "refusal": "I'm very sorry, but I can't assist with that request.",
           "role": "assistant",
-          "tool_calls": [],
         },
       }
     `);
     expect(capturedLogProbs?.length).toEqual(choice?.logprobs?.refusal?.length);
   });
-});
+
+  it('handles audio responses with expires_at', async () => {
+    const stream = await makeStreamSnapshotRequest((openai) =>
+      openai.beta.chat.completions.stream({
+        model: 'gpt-4o-audio-preview',
+        messages: [{ role: 'user', content: 'Say something' }],
+      })
+    );
+
+    const completion = await stream.finalChatCompletion();
+    expect(completion.choices[0]).toMatchInlineSnapshot(`
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "message": {
+          "content": null,
+          "role": "assistant",
+          "audio": {
+            "id": "audio-123",
+            "data": "base64audio...",
+            "expires_at": 1704805200,
+            "transcript": "Hello, this is a test response."
+          }
+        }
+      }
+    `);
+  });
