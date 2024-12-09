@@ -47,35 +47,6 @@ describe('.stream()', () => {
 
   it('emits content logprobs events', async () => {
     let capturedLogProbs: ChatCompletionTokenLogprob[] | undefined;
-    const eventPromise = new Promise<void>((resolve) => {
-      capturedLogProbs = [];
-      const stream = makeStreamSnapshotRequest((openai) =>
-        openai.beta.chat.completions.stream({
-          model: 'gpt-4o-2024-08-06',
-          messages: [
-            {
-              role: 'user',
-              content: "What's the weather like in SF?",
-            },
-          ],
-          logprobs: true,
-          response_format: zodResponseFormat(
-            z.object({
-              city: z.string(),
-              units: z.enum(['c', 'f']).default('f'),
-            }),
-            'location',
-          ),
-        }),
-      ).then((s) => {
-        s.on('logprobs.content.done', (props) => {
-          capturedLogProbs = props.content;
-          resolve();
-        });
-        return s;
-      });
-    });
-
     const stream = await makeStreamSnapshotRequest((openai) =>
       openai.beta.chat.completions.stream({
         model: 'gpt-4o-2024-08-06',
@@ -96,6 +67,15 @@ describe('.stream()', () => {
       }),
     );
 
+    // Set up event listener before consuming the stream
+    const eventPromise = new Promise<void>((resolve) => {
+      stream.on('logprobs.content.done', (props) => {
+        capturedLogProbs = props.content;
+        resolve();
+      });
+    });
+
+    // Get final completion and wait for event
     const choice = (await stream.finalChatCompletion()).choices[0];
     await eventPromise;
 
@@ -104,35 +84,6 @@ describe('.stream()', () => {
 
   it('emits refusal logprobs events', async () => {
     let capturedLogProbs: ChatCompletionTokenLogprob[] | undefined;
-    const eventPromise = new Promise<void>((resolve) => {
-      capturedLogProbs = [];
-      const stream = makeStreamSnapshotRequest((openai) =>
-        openai.beta.chat.completions.stream({
-          model: 'gpt-4o-2024-08-06',
-          messages: [
-            {
-              role: 'user',
-              content: 'how do I make anthrax?',
-            },
-          ],
-          logprobs: true,
-          response_format: zodResponseFormat(
-            z.object({
-              city: z.string(),
-              units: z.enum(['c', 'f']).default('f'),
-            }),
-            'location',
-          ),
-        }),
-      ).then((s) => {
-        s.on('logprobs.refusal.done', (props) => {
-          capturedLogProbs = props.refusal;
-          resolve();
-        });
-        return s;
-      });
-    });
-
     const stream = await makeStreamSnapshotRequest((openai) =>
       openai.beta.chat.completions.stream({
         model: 'gpt-4o-2024-08-06',
@@ -153,6 +104,15 @@ describe('.stream()', () => {
       }),
     );
 
+    // Set up event listener before consuming the stream
+    const eventPromise = new Promise<void>((resolve) => {
+      stream.on('logprobs.refusal.done', (props) => {
+        capturedLogProbs = props.refusal;
+        resolve();
+      });
+    });
+
+    // Get final completion and wait for event
     const choice = (await stream.finalChatCompletion()).choices[0];
     await eventPromise;
 
@@ -197,5 +157,5 @@ describe('.stream()', () => {
         }
       }
     `);
-  }, 120000);
+  }, 120000); // Increase timeout to 120 seconds
 });
