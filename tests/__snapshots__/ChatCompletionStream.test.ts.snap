@@ -1,0 +1,104 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`.stream() emits content logprobs events 1`] = `
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": {
+        "content": [
+          {
+            "bytes": [123, 34],
+            "logprob": -0.0036115935,
+            "token": "{\"",
+            "top_logprobs": []
+          }
+        ]
+      },
+      "message": {
+        "content": "{\\"city\\":\\"San Francisco\\",\\"units\\":\\"f\\"}",
+        "parsed": {
+          "city": "San Francisco",
+          "units": "f"
+        },
+        "refusal": null,
+        "role": "assistant",
+        "tool_calls": []
+      }
+    }
+  ]
+}
+`;
+
+exports[`.stream() emits refusal logprobs events 1`] = `
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": {
+        "content": null,
+        "refusal": [
+          {
+            "bytes": [73, 39, 109],
+            "logprob": -0.0020705638,
+            "token": "I'm",
+            "top_logprobs": []
+          }
+        ]
+      },
+      "message": {
+        "content": null,
+        "parsed": null,
+        "refusal": "I'm very sorry, but I can't assist with that request.",
+        "role": "assistant",
+        "tool_calls": []
+      }
+    }
+  ]
+}
+`;
+
+exports[`.stream() handles audio responses with expires_at 1`] = `
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": null,
+        "role": "assistant",
+        "audio": {
+          "id": "audio-123",
+          "data": "base64audio...",
+          "expires_at": 1704805200,
+          "transcript": "Hello, this is a test response."
+        }
+      }
+    }
+  ]
+}
+`;
+
+exports[`.stream() works 1`] = `
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "{\\"city\\":\\"San Francisco\\",\\"units\\":\\"c\\"}",
+        "parsed": {
+          "city": "San Francisco",
+          "units": "c"
+        },
+        "refusal": null,
+        "role": "assistant",
+        "tool_calls": []
+      }
+    }
+  ]
+}
+`;
